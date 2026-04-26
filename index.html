@@ -132,6 +132,48 @@
     .menu button:hover {
       background: #66bb6a;
     }
+
+    .difficulty-selector {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 12px 0;
+    }
+
+    .difficulty-selector button {
+      flex: 1;
+      background: #444;
+      color: #ccc;
+      border: 2px solid #444;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: normal;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 0;
+    }
+
+    .difficulty-selector button:hover {
+      background: #555;
+    }
+
+    .difficulty-selector button.active {
+      background: #4caf50;
+      border-color: #81c784;
+      color: white;
+      font-weight: bold;
+    }
+
+    .score-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .score-row .difficulty-tag {
+      color: #81c784;
+    }
   </style>
 </head>
 <body>
@@ -145,7 +187,12 @@
     const { useState, useEffect } = React;
 
     const BOARD_SIZE = 20;
-    const TICK_MS = 150;
+
+    const DIFFICULTIES = {
+      easy:   { label: "Fácil",   tickMs: 200 },
+      normal: { label: "Normal",  tickMs: 130 },
+      hard:   { label: "Difícil", tickMs: 80  },
+    };
 
     const DIRECTIONS = {
       UP:    { row: -1, col:  0 },
@@ -211,11 +258,16 @@
       return null;
     }
 
-    function Score({ value }) {
-      return <div className="score">Puntaje: {value}</div>;
+    function Score({ value, difficultyLabel }) {
+      return (
+        <div className="score-row">
+          <div>Puntaje: <strong>{value}</strong></div>
+          <div className="difficulty-tag">Dificultad: {difficultyLabel}</div>
+        </div>
+      );
     }
 
-    function StartMenu({ onStart }) {
+    function StartMenu({ difficulty, onChangeDifficulty, onStart }) {
       return (
         <div className="menu">
           <h2>Snake</h2>
@@ -225,6 +277,18 @@
             <p>↑ ↓ ← → o W A S D para moverte</p>
             <p>Come la comida roja para crecer</p>
             <p>Evita las paredes y tu propio cuerpo</p>
+          </div>
+          <p><strong>Dificultad:</strong></p>
+          <div className="difficulty-selector">
+            {Object.keys(DIFFICULTIES).map((key) => (
+              <button
+                key={key}
+                className={difficulty === key ? "active" : ""}
+                onClick={() => onChangeDifficulty(key)}
+              >
+                {DIFFICULTIES[key].label}
+              </button>
+            ))}
           </div>
           <button onClick={onStart}>Jugar</button>
         </div>
@@ -263,6 +327,7 @@
       const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
       const [score, setScore] = useState(0);
       const [screen, setScreen] = useState("menu");
+      const [difficulty, setDifficulty] = useState("normal");
 
       function startGame() {
         setSnake(INITIAL_SNAKE);
@@ -300,6 +365,8 @@
       useEffect(() => {
         if (screen !== "playing") return;
 
+        const tickMs = DIFFICULTIES[difficulty].tickMs;
+
         const intervalId = setInterval(() => {
           setSnake((prevSnake) => {
             const head = prevSnake[0];
@@ -336,18 +403,24 @@
 
             return newSnake;
           });
-        }, TICK_MS);
+        }, tickMs);
 
         return () => clearInterval(intervalId);
-      }, [direction, food, screen]);
+      }, [direction, food, screen, difficulty]);
 
       if (screen === "menu") {
-        return <StartMenu onStart={startGame} />;
+        return (
+          <StartMenu
+            difficulty={difficulty}
+            onChangeDifficulty={setDifficulty}
+            onStart={startGame}
+          />
+        );
       }
 
       return (
         <div>
-          <Score value={score} />
+          <Score value={score} difficultyLabel={DIFFICULTIES[difficulty].label} />
           <div className="board-wrapper">
             <Board size={BOARD_SIZE} snake={snake} food={food} />
             {screen === "gameover" && (
