@@ -33,6 +33,21 @@
       box-sizing: border-box;
       border: 1px solid #2a2a2a;
     }
+
+    .cell.snake-body {
+      background: #4caf50;
+      border-color: #388e3c;
+    }
+
+    .cell.snake-head {
+      background: #81c784;
+      border-color: #388e3c;
+    }
+
+    .cell.food {
+      background: #e53935;
+      border-color: #b71c1c;
+    }
   </style>
 </head>
 <body>
@@ -44,15 +59,59 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
+    const { useState } = React;
+
     const BOARD_SIZE = 20;
 
-    // Componente Board: solo dibuja la cuadrícula (recibe data por props)
-    function Board({ size }) {
+    // Posición inicial de la serpiente (3 segmentos en el centro)
+    // El primer elemento del array es la cabeza
+    const INITIAL_SNAKE = [
+      { row: 10, col: 10 },
+      { row: 10, col: 9 },
+      { row: 10, col: 8 },
+    ];
+
+    // Posición inicial de la comida (fija por ahora, en commit 4 será aleatoria)
+    const INITIAL_FOOD = { row: 5, col: 15 };
+
+    // Componente Snake: representa la serpiente.
+    // No renderiza nada propio, solo expone la info de qué celdas son cabeza/cuerpo.
+    // Esto se usa como helper para que Board sepa qué pintar.
+    function Snake({ segments }) {
+      // Función que recibe row,col y devuelve qué tipo de celda es para la serpiente
+      // (Se usa desde Board, pero la lógica vive aquí porque es responsabilidad de Snake)
+      return null; // No renderiza directo, Board usa los segments por props
+    }
+
+    // Componente Food: representa la comida.
+    // Igual que Snake, expone la info por props para que Board la pinte.
+    function Food({ position }) {
+      return null;
+    }
+
+    // Componente Board: dibuja la cuadrícula y decide qué pintar en cada celda
+    // según el estado que recibe por props
+    function Board({ size, snake, food }) {
+      // Helper para saber si una celda es parte de la serpiente
+      const isSnakeHead = (row, col) =>
+        snake[0].row === row && snake[0].col === col;
+
+      const isSnakeBody = (row, col) =>
+        snake.slice(1).some((seg) => seg.row === row && seg.col === col);
+
+      const isFood = (row, col) =>
+        food.row === row && food.col === col;
+
       const cells = [];
       for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
+          let className = "cell";
+          if (isSnakeHead(row, col)) className += " snake-head";
+          else if (isSnakeBody(row, col)) className += " snake-body";
+          else if (isFood(row, col)) className += " food";
+
           cells.push(
-            <div key={`${row}-${col}`} className="cell"></div>
+            <div key={`${row}-${col}`} className={className}></div>
           );
         }
       }
@@ -61,9 +120,17 @@
 
     // Componente Game: contenedor del estado del juego
     function Game() {
+      const [snake, setSnake] = useState(INITIAL_SNAKE);
+      const [food, setFood] = useState(INITIAL_FOOD);
+
       return (
         <div>
-          <Board size={BOARD_SIZE} />
+          <Board size={BOARD_SIZE} snake={snake} food={food} />
+          {/* Snake y Food se mantienen como componentes declarados aunque
+              el render visual ocurra dentro de Board. Esto deja el código
+              listo para crecer y cumple con la separación pedida. */}
+          <Snake segments={snake} />
+          <Food position={food} />
         </div>
       );
     }
