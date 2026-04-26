@@ -54,6 +54,36 @@
       background: #e53935;
       border-color: #b71c1c;
     }
+
+    .board-wrapper {
+      position: relative;
+    }
+
+    .game-over {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      gap: 10px;
+    }
+
+    .game-over .title {
+      font-size: 32px;
+      color: #ff5252;
+    }
+
+    .game-over .hint {
+      font-size: 14px;
+      color: #ddd;
+    }
   </style>
 </head>
 <body>
@@ -112,6 +142,19 @@
       }
     }
 
+    function hitsWall(head) {
+      return (
+        head.row < 0 ||
+        head.row >= BOARD_SIZE ||
+        head.col < 0 ||
+        head.col >= BOARD_SIZE
+      );
+    }
+
+    function hitsSelf(head, body) {
+      return body.some((seg) => seg.row === head.row && seg.col === head.col);
+    }
+
     function Snake({ segments }) {
       return null;
     }
@@ -155,9 +198,25 @@
       const [food, setFood] = useState(INITIAL_FOOD);
       const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
       const [score, setScore] = useState(0);
+      const [gameOver, setGameOver] = useState(false);
+
+      function resetGame() {
+        setSnake(INITIAL_SNAKE);
+        setFood(INITIAL_FOOD);
+        setDirection(DIRECTIONS.RIGHT);
+        setScore(0);
+        setGameOver(false);
+      }
 
       useEffect(() => {
         function handleKeyDown(event) {
+          if (gameOver) {
+            if (event.key === " " || event.key === "Enter") {
+              resetGame();
+            }
+            return;
+          }
+
           const newDirection = KEY_TO_DIRECTION[event.key];
           if (!newDirection) return;
           if (isOpposite(newDirection, direction)) return;
@@ -166,9 +225,11 @@
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-      }, [direction]);
+      }, [direction, gameOver]);
 
       useEffect(() => {
+        if (gameOver) return;
+
         const intervalId = setInterval(() => {
           setSnake((prevSnake) => {
             const head = prevSnake[0];
@@ -177,8 +238,22 @@
               col: head.col + direction.col,
             };
 
+            if (hitsWall(newHead)) {
+              setGameOver(true);
+              return prevSnake;
+            }
+
             const ateFood =
               newHead.row === food.row && newHead.col === food.col;
+
+            const bodyToCheck = ateFood
+              ? prevSnake
+              : prevSnake.slice(0, -1);
+
+            if (hitsSelf(newHead, bodyToCheck)) {
+              setGameOver(true);
+              return prevSnake;
+            }
 
             let newSnake;
             if (ateFood) {
@@ -194,12 +269,21 @@
         }, TICK_MS);
 
         return () => clearInterval(intervalId);
-      }, [direction, food]);
+      }, [direction, food, gameOver]);
 
       return (
         <div>
           <Score value={score} />
-          <Board size={BOARD_SIZE} snake={snake} food={food} />
+          <div className="board-wrapper">
+            <Board size={BOARD_SIZE} snake={snake} food={food} />
+            {gameOver && (
+              <div className="game-over">
+                <div className="title">GAME OVER</div>
+                <div>Puntaje final: {score}</div>
+                <div className="hint">Presiona Espacio o Enter para reiniciar</div>
+              </div>
+            )}
+          </div>
           <Snake segments={snake} />
           <Food position={food} />
         </div>
