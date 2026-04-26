@@ -10,27 +10,27 @@ Implementación del juego clásico **Snake** usando React y Babel vía CDN, sin 
 
 ### Controles
 
-↑ ↓ ← → - Mover la serpiente 
-W A S D - Mover (otra opcion)
-Espacio / Enter - Volver al menú (en Game Over) 
+1. ↑ ↓ ← → - Mover la serpiente 
+2. W A S D - Mover (otra opcion)
+3. Espacio / Enter - Volver al menú (en Game Over) 
 
 ### Objetivo
 
 Comer la comida roja para crecer y sumar puntos. Evita chocar contra las paredes o tu propio cuerpo.
 
-## ⚙️ Dificultades
+## Dificultades
 
- Nivel  Velocidad 
+ - Nivel  Velocidad 
 
- Fácil -Lenta 
- Normal - media 
- Difícil - rápida 
+ - Fácil -Lenta 
+ - Normal - media 
+ - Difícil - rápida 
 
-## 🧩 Estructura del proyecto
+## Estructura del proyecto
 
-snake-react/
-├── index.html 
-└── README.md
+- LAB7SNAKE/
+- ├── index.html 
+- └── README.md
 
 ### Componentes
 
