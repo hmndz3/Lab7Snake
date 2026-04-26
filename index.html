@@ -84,6 +84,54 @@
       font-size: 14px;
       color: #ddd;
     }
+
+    .menu {
+      background: #2c2c2c;
+      border: 2px solid #555;
+      border-radius: 8px;
+      padding: 24px 32px;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .menu h2 {
+      margin: 0 0 12px 0;
+      color: #81c784;
+    }
+
+    .menu p {
+      margin: 8px 0;
+      color: #ccc;
+    }
+
+    .menu .controls {
+      background: #1a1a1a;
+      border-radius: 4px;
+      padding: 12px;
+      margin: 16px 0;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .menu .controls strong {
+      color: #81c784;
+    }
+
+    .menu button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .menu button:hover {
+      background: #66bb6a;
+    }
   </style>
 </head>
 <body>
@@ -167,6 +215,22 @@
       return <div className="score">Puntaje: {value}</div>;
     }
 
+    function StartMenu({ onStart }) {
+      return (
+        <div className="menu">
+          <h2>Snake</h2>
+          <p>El juego clásico, hecho con React.</p>
+          <div className="controls">
+            <p><strong>Controles:</strong></p>
+            <p>↑ ↓ ← → o W A S D para moverte</p>
+            <p>Come la comida roja para crecer</p>
+            <p>Evita las paredes y tu propio cuerpo</p>
+          </div>
+          <button onClick={onStart}>Jugar</button>
+        </div>
+      );
+    }
+
     function Board({ size, snake, food }) {
       const isSnakeHead = (row, col) =>
         snake[0].row === row && snake[0].col === col;
@@ -198,24 +262,30 @@
       const [food, setFood] = useState(INITIAL_FOOD);
       const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
       const [score, setScore] = useState(0);
-      const [gameOver, setGameOver] = useState(false);
+      const [screen, setScreen] = useState("menu");
 
-      function resetGame() {
+      function startGame() {
         setSnake(INITIAL_SNAKE);
         setFood(INITIAL_FOOD);
         setDirection(DIRECTIONS.RIGHT);
         setScore(0);
-        setGameOver(false);
+        setScreen("playing");
+      }
+
+      function goToMenu() {
+        setScreen("menu");
       }
 
       useEffect(() => {
         function handleKeyDown(event) {
-          if (gameOver) {
+          if (screen === "gameover") {
             if (event.key === " " || event.key === "Enter") {
-              resetGame();
+              goToMenu();
             }
             return;
           }
+
+          if (screen !== "playing") return;
 
           const newDirection = KEY_TO_DIRECTION[event.key];
           if (!newDirection) return;
@@ -225,10 +295,10 @@
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-      }, [direction, gameOver]);
+      }, [direction, screen]);
 
       useEffect(() => {
-        if (gameOver) return;
+        if (screen !== "playing") return;
 
         const intervalId = setInterval(() => {
           setSnake((prevSnake) => {
@@ -239,7 +309,7 @@
             };
 
             if (hitsWall(newHead)) {
-              setGameOver(true);
+              setScreen("gameover");
               return prevSnake;
             }
 
@@ -251,7 +321,7 @@
               : prevSnake.slice(0, -1);
 
             if (hitsSelf(newHead, bodyToCheck)) {
-              setGameOver(true);
+              setScreen("gameover");
               return prevSnake;
             }
 
@@ -269,18 +339,22 @@
         }, TICK_MS);
 
         return () => clearInterval(intervalId);
-      }, [direction, food, gameOver]);
+      }, [direction, food, screen]);
+
+      if (screen === "menu") {
+        return <StartMenu onStart={startGame} />;
+      }
 
       return (
         <div>
           <Score value={score} />
           <div className="board-wrapper">
             <Board size={BOARD_SIZE} snake={snake} food={food} />
-            {gameOver && (
+            {screen === "gameover" && (
               <div className="game-over">
                 <div className="title">GAME OVER</div>
                 <div>Puntaje final: {score}</div>
-                <div className="hint">Presiona Espacio o Enter para reiniciar</div>
+                <div className="hint">Presiona Espacio o Enter para volver al menú</div>
               </div>
             )}
           </div>
