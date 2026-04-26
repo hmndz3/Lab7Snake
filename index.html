@@ -53,46 +53,60 @@
 <body>
   <div id="root"></div>
 
-  <!-- React, ReactDOM y Babel via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
 
     const BOARD_SIZE = 20;
+    const TICK_MS = 150; 
 
-    // Posición inicial de la serpiente (3 segmentos en el centro)
-    // El primer elemento del array es la cabeza
+    const DIRECTIONS = {
+      UP:    { row: -1, col:  0 },
+      DOWN:  { row:  1, col:  0 },
+      LEFT:  { row:  0, col: -1 },
+      RIGHT: { row:  0, col:  1 },
+    };
+
+    const KEY_TO_DIRECTION = {
+      ArrowUp:    DIRECTIONS.UP,
+      ArrowDown:  DIRECTIONS.DOWN,
+      ArrowLeft:  DIRECTIONS.LEFT,
+      ArrowRight: DIRECTIONS.RIGHT,
+      w: DIRECTIONS.UP,
+      s: DIRECTIONS.DOWN,
+      a: DIRECTIONS.LEFT,
+      d: DIRECTIONS.RIGHT,
+    };
+
+
+    function isOpposite(dirA, dirB) {
+      return dirA.row + dirB.row === 0 && dirA.col + dirB.col === 0;
+    }
+
+
     const INITIAL_SNAKE = [
       { row: 10, col: 10 },
       { row: 10, col: 9 },
       { row: 10, col: 8 },
     ];
 
-    // Posición inicial de la comida (fija por ahora, en commit 4 será aleatoria)
     const INITIAL_FOOD = { row: 5, col: 15 };
 
-    // Componente Snake: representa la serpiente.
-    // No renderiza nada propio, solo expone la info de qué celdas son cabeza/cuerpo.
-    // Esto se usa como helper para que Board sepa qué pintar.
+
     function Snake({ segments }) {
-      // Función que recibe row,col y devuelve qué tipo de celda es para la serpiente
-      // (Se usa desde Board, pero la lógica vive aquí porque es responsabilidad de Snake)
-      return null; // No renderiza directo, Board usa los segments por props
+      return null; 
     }
 
-    // Componente Food: representa la comida.
-    // Igual que Snake, expone la info por props para que Board la pinte.
+
     function Food({ position }) {
       return null;
     }
 
-    // Componente Board: dibuja la cuadrícula y decide qué pintar en cada celda
-    // según el estado que recibe por props
+
     function Board({ size, snake, food }) {
-      // Helper para saber si una celda es parte de la serpiente
       const isSnakeHead = (row, col) =>
         snake[0].row === row && snake[0].col === col;
 
@@ -118,10 +132,40 @@
       return <div className="board">{cells}</div>;
     }
 
-    // Componente Game: contenedor del estado del juego
     function Game() {
       const [snake, setSnake] = useState(INITIAL_SNAKE);
       const [food, setFood] = useState(INITIAL_FOOD);
+      const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
+
+      useEffect(() => {
+        function handleKeyDown(event) {
+          const newDirection = KEY_TO_DIRECTION[event.key];
+          if (!newDirection) return; 
+
+          if (isOpposite(newDirection, direction)) return;
+
+          setDirection(newDirection);
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => window.removeEventListener("keydown", handleKeyDown);
+      }, [direction]);
+
+      useEffect(() => {
+        const intervalId = setInterval(() => {
+          setSnake((prevSnake) => {
+            const head = prevSnake[0];
+            const newHead = {
+              row: head.row + direction.row,
+              col: head.col + direction.col,
+            };
+            return [newHead, ...prevSnake.slice(0, -1)];
+          });
+        }, TICK_MS);
+
+        return () => clearInterval(intervalId);
+      }, [direction]);
 
       return (
         <div>
