@@ -19,6 +19,12 @@
       margin-bottom: 10px;
     }
 
+    .score {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
     .board {
       display: grid;
       grid-template-columns: repeat(20, 20px);
@@ -61,7 +67,7 @@
     const { useState, useEffect } = React;
 
     const BOARD_SIZE = 20;
-    const TICK_MS = 150; 
+    const TICK_MS = 150;
 
     const DIRECTIONS = {
       UP:    { row: -1, col:  0 },
@@ -81,12 +87,6 @@
       d: DIRECTIONS.RIGHT,
     };
 
-
-    function isOpposite(dirA, dirB) {
-      return dirA.row + dirB.row === 0 && dirA.col + dirB.col === 0;
-    }
-
-
     const INITIAL_SNAKE = [
       { row: 10, col: 10 },
       { row: 10, col: 9 },
@@ -95,16 +95,34 @@
 
     const INITIAL_FOOD = { row: 5, col: 15 };
 
-
-    function Snake({ segments }) {
-      return null; 
+    function isOpposite(dirA, dirB) {
+      return dirA.row + dirB.row === 0 && dirA.col + dirB.col === 0;
     }
 
+    function getRandomFoodPosition(snake) {
+      while (true) {
+        const newFood = {
+          row: Math.floor(Math.random() * BOARD_SIZE),
+          col: Math.floor(Math.random() * BOARD_SIZE),
+        };
+        const onSnake = snake.some(
+          (seg) => seg.row === newFood.row && seg.col === newFood.col
+        );
+        if (!onSnake) return newFood;
+      }
+    }
+
+    function Snake({ segments }) {
+      return null;
+    }
 
     function Food({ position }) {
       return null;
     }
 
+    function Score({ value }) {
+      return <div className="score">Puntaje: {value}</div>;
+    }
 
     function Board({ size, snake, food }) {
       const isSnakeHead = (row, col) =>
@@ -136,19 +154,17 @@
       const [snake, setSnake] = useState(INITIAL_SNAKE);
       const [food, setFood] = useState(INITIAL_FOOD);
       const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
+      const [score, setScore] = useState(0);
 
       useEffect(() => {
         function handleKeyDown(event) {
           const newDirection = KEY_TO_DIRECTION[event.key];
-          if (!newDirection) return; 
-
+          if (!newDirection) return;
           if (isOpposite(newDirection, direction)) return;
-
           setDirection(newDirection);
         }
 
         window.addEventListener("keydown", handleKeyDown);
-
         return () => window.removeEventListener("keydown", handleKeyDown);
       }, [direction]);
 
@@ -160,26 +176,36 @@
               row: head.row + direction.row,
               col: head.col + direction.col,
             };
-            return [newHead, ...prevSnake.slice(0, -1)];
+
+            const ateFood =
+              newHead.row === food.row && newHead.col === food.col;
+
+            let newSnake;
+            if (ateFood) {
+              newSnake = [newHead, ...prevSnake];
+              setScore((s) => s + 10);
+              setFood(getRandomFoodPosition(newSnake));
+            } else {
+              newSnake = [newHead, ...prevSnake.slice(0, -1)];
+            }
+
+            return newSnake;
           });
         }, TICK_MS);
 
         return () => clearInterval(intervalId);
-      }, [direction]);
+      }, [direction, food]);
 
       return (
         <div>
+          <Score value={score} />
           <Board size={BOARD_SIZE} snake={snake} food={food} />
-          {/* Snake y Food se mantienen como componentes declarados aunque
-              el render visual ocurra dentro de Board. Esto deja el código
-              listo para crecer y cumple con la separación pedida. */}
           <Snake segments={snake} />
           <Food position={food} />
         </div>
       );
     }
 
-    // Componente App: contenedor principal
     function App() {
       return (
         <div>
